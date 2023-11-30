@@ -4,18 +4,18 @@
 
 package io.airbyte.integrations.source.snowflake;
 
-import static io.airbyte.db.jdbc.DateTimeConverter.putJavaSQLDate;
-import static io.airbyte.db.jdbc.DateTimeConverter.putJavaSQLTime;
-import static io.airbyte.db.jdbc.JdbcConstants.INTERNAL_COLUMN_NAME;
-import static io.airbyte.db.jdbc.JdbcConstants.INTERNAL_COLUMN_TYPE;
-import static io.airbyte.db.jdbc.JdbcConstants.INTERNAL_COLUMN_TYPE_NAME;
-import static io.airbyte.db.jdbc.JdbcConstants.INTERNAL_SCHEMA_NAME;
-import static io.airbyte.db.jdbc.JdbcConstants.INTERNAL_TABLE_NAME;
+import static io.airbyte.cdk.db.jdbc.DateTimeConverter.putJavaSQLTime;
+import static io.airbyte.cdk.db.jdbc.JdbcConstants.INTERNAL_COLUMN_NAME;
+import static io.airbyte.cdk.db.jdbc.JdbcConstants.INTERNAL_COLUMN_TYPE;
+import static io.airbyte.cdk.db.jdbc.JdbcConstants.INTERNAL_COLUMN_TYPE_NAME;
+import static io.airbyte.cdk.db.jdbc.JdbcConstants.INTERNAL_SCHEMA_NAME;
+import static io.airbyte.cdk.db.jdbc.JdbcConstants.INTERNAL_TABLE_NAME;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.airbyte.db.jdbc.DateTimeConverter;
-import io.airbyte.db.jdbc.JdbcSourceOperations;
+import io.airbyte.cdk.db.DataTypeUtils;
+import io.airbyte.cdk.db.jdbc.DateTimeConverter;
+import io.airbyte.cdk.db.jdbc.JdbcSourceOperations;
 import io.airbyte.protocol.models.JsonSchemaType;
 import java.math.BigDecimal;
 import java.sql.Date;
@@ -25,6 +25,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,6 +77,15 @@ public class SnowflakeSourceOperations extends JdbcSourceOperations {
     preparedStatement.setString(parameterIndex, value);
   }
 
+  protected void setTimestampWithTimezone(final PreparedStatement preparedStatement, final int parameterIndex, final String value)
+      throws SQLException {
+    preparedStatement.setString(parameterIndex, value);
+  }
+
+  protected void setTimeWithTimezone(final PreparedStatement preparedStatement, final int parameterIndex, final String value) throws SQLException {
+    preparedStatement.setString(parameterIndex, value);
+  }
+
   @Override
   public JsonSchemaType getAirbyteType(final JDBCType jdbcType) {
     return switch (jdbcType) {
@@ -113,26 +125,28 @@ public class SnowflakeSourceOperations extends JdbcSourceOperations {
     preparedStatement.setDate(parameterIndex, Date.valueOf(date));
   }
 
+  private static final DateTimeFormatter SNOWFLAKE_TIMESTAMPTZ_FORMATTER = new DateTimeFormatterBuilder()
+      .parseCaseInsensitive()
+      .append(DateTimeFormatter.ISO_LOCAL_DATE)
+      .appendLiteral(' ')
+      .append(DateTimeFormatter.ISO_LOCAL_TIME)
+      .optionalStart()
+      .appendLiteral(' ')
+      .append(DateTimeFormatter.ofPattern("XX"))
+      .toFormatter();
+
   @Override
   protected void putTimestampWithTimezone(final ObjectNode node, final String columnName, final ResultSet resultSet, final int index)
       throws SQLException {
-    final Timestamp timestamp = resultSet.getTimestamp(index);
-    node.put(columnName, DateTimeConverter.convertToTimestampWithTimezone(timestamp));
+    final String timestampAsString = resultSet.getString(index);
+    OffsetDateTime timestampWithOffset = OffsetDateTime.parse(timestampAsString, SNOWFLAKE_TIMESTAMPTZ_FORMATTER);
+    node.put(columnName, timestampWithOffset.format(DataTypeUtils.TIMESTAMPTZ_FORMATTER));
   }
 
   @Override
   protected void putTimestamp(final ObjectNode node, final String columnName, final ResultSet resultSet, final int index) throws SQLException {
     final Timestamp timestamp = resultSet.getTimestamp(index);
     node.put(columnName, DateTimeConverter.convertToTimestamp(timestamp));
-  }
-
-  @Override
-  protected void putDate(final ObjectNode node,
-                         final String columnName,
-                         final ResultSet resultSet,
-                         final int index)
-      throws SQLException {
-    putJavaSQLDate(node, columnName, resultSet, index);
   }
 
   @Override

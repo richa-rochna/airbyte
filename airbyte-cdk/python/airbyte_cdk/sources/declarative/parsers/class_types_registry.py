@@ -2,7 +2,7 @@
 # Copyright (c) 2023 Airbyte, Inc., all rights reserved.
 #
 
-from typing import Mapping, Type
+from typing import Mapping
 
 from airbyte_cdk.sources.declarative.auth.declarative_authenticator import NoAuth
 from airbyte_cdk.sources.declarative.auth.oauth import DeclarativeOauth2Authenticator
@@ -10,7 +10,7 @@ from airbyte_cdk.sources.declarative.auth.token import (
     ApiKeyAuthenticator,
     BasicHttpAuthenticator,
     BearerAuthenticator,
-    SessionTokenAuthenticator,
+    LegacySessionTokenAuthenticator,
 )
 from airbyte_cdk.sources.declarative.checks import CheckStream
 from airbyte_cdk.sources.declarative.datetime.min_max_datetime import MinMaxDatetime
@@ -51,11 +51,12 @@ from airbyte_cdk.sources.declarative.spec import Spec
 from airbyte_cdk.sources.declarative.stream_slicers.cartesian_product_stream_slicer import CartesianProductStreamSlicer
 from airbyte_cdk.sources.declarative.transformations import RemoveFields
 from airbyte_cdk.sources.declarative.transformations.add_fields import AddedFieldDefinition, AddFields
+from airbyte_cdk.sources.streams.http.requests_native_auth.oauth import SingleUseRefreshTokenOauth2Authenticator
 
 """
 CLASS_TYPES_REGISTRY contains a mapping of developer-friendly string -> class to abstract the specific class referred to
 """
-CLASS_TYPES_REGISTRY: Mapping[str, Type] = {
+CLASS_TYPES_REGISTRY: Mapping[str, type] = {
     "AddedFieldDefinition": AddedFieldDefinition,
     "AddFields": AddFields,
     "ApiKeyAuthenticator": ApiKeyAuthenticator,
@@ -84,6 +85,7 @@ CLASS_TYPES_REGISTRY: Mapping[str, Type] = {
     "NoAuth": NoAuth,
     "NoPagination": NoPagination,
     "OAuthAuthenticator": DeclarativeOauth2Authenticator,
+    "SingleUseRefreshTokenOAuthAuthenticator": SingleUseRefreshTokenOauth2Authenticator,
     "OffsetIncrement": OffsetIncrement,
     "PageIncrement": PageIncrement,
     "ParentStreamConfig": ParentStreamConfig,
@@ -94,7 +96,7 @@ CLASS_TYPES_REGISTRY: Mapping[str, Type] = {
     "SimpleRetriever": SimpleRetriever,
     "Spec": Spec,
     "SubstreamPartitionRouter": SubstreamPartitionRouter,
-    "SessionTokenAuthenticator": SessionTokenAuthenticator,
+    "SessionTokenAuthenticator": LegacySessionTokenAuthenticator,
     "WaitUntilTimeFromHeader": WaitUntilTimeFromHeaderBackoffStrategy,
     "WaitTimeFromHeader": WaitTimeFromHeaderBackoffStrategy,
 }

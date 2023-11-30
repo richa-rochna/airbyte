@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, PropertyMock, patch
 
 import pendulum
 import pytest
+import requests
 from source_tiktok_marketing.source import get_report_stream
 from source_tiktok_marketing.streams import (
     AdGroupsReports,
@@ -33,6 +34,7 @@ CONFIG = {
     "end_date": END_DATE,
     "app_id": 1234,
     "advertiser_id": 0,
+    "include_deleted": True,
 }
 CONFIG_SANDBOX = {
     "access_token": "access_token",
@@ -127,7 +129,7 @@ def test_stream_slices_report(advertiser_ids, granularity, slices_expected, pend
 @pytest.mark.parametrize(
     "stream, metrics_number",
     [
-        (AdsReports, 54),
+        (AdsReports, 65),
         (AdGroupsReports, 51),
         (AdvertisersReports, 29),
         (CampaignsReports, 28),
@@ -143,7 +145,7 @@ def test_basic_reports_get_metrics_day(stream, metrics_number):
 @pytest.mark.parametrize(
     "stream, metrics_number",
     [
-        (AdsReports, 54),
+        (AdsReports, 65),
         (AdGroupsReports, 51),
         (AdvertisersReports, 27),
         (CampaignsReports, 28),
@@ -162,7 +164,7 @@ def test_basic_reports_get_metrics_lifetime(stream, metrics_number):
         (AdGroupsReports, ["adgroup_id"]),
         (AdvertisersReports, ["advertiser_id"]),
         (CampaignsReports, ["campaign_id"]),
-        (AdvertisersAudienceReports, ["advertiser_id"]),
+        (AdvertisersAudienceReports, ["advertiser_id", "gender", "age"]),
     ],
 )
 def test_basic_reports_get_reporting_dimensions_lifetime(stream, dimensions_expected):
@@ -177,7 +179,7 @@ def test_basic_reports_get_reporting_dimensions_lifetime(stream, dimensions_expe
         (AdGroupsReports, ["adgroup_id", "stat_time_day"]),
         (AdvertisersReports, ["advertiser_id", "stat_time_day"]),
         (CampaignsReports, ["campaign_id", "stat_time_day"]),
-        (AdvertisersAudienceReports, ["advertiser_id", "stat_time_day"]),
+        (AdvertisersAudienceReports, ["advertiser_id", "stat_time_day", "gender", "age"]),
     ],
 )
 def test_basic_reports_get_reporting_dimensions_day(stream, dimensions_expected):
@@ -190,13 +192,27 @@ def test_basic_reports_get_reporting_dimensions_day(stream, dimensions_expected)
     [
         (Daily, "stat_time_day"),
         (Hourly, "stat_time_hour"),
-        (Lifetime, "stat_time_day"),
+        (Lifetime, []),
     ],
 )
 def test_basic_reports_cursor_field(granularity, cursor_field_expected):
     ads_reports = get_report_stream(AdsReports, granularity)(**CONFIG)
     cursor_field = ads_reports.cursor_field
     assert cursor_field == cursor_field_expected
+
+
+@pytest.mark.parametrize(
+    "granularity, cursor_field_expected",
+    [
+        (Daily, ["dimensions", "stat_time_day"]),
+        (Hourly, ["dimensions", "stat_time_hour"]),
+        (Lifetime, ["dimensions", "stat_time_day"]),
+    ],
+)
+def test_basic_reports_deprecated_cursor_field(granularity, cursor_field_expected):
+    ads_reports = get_report_stream(AdsReports, granularity)(**CONFIG)
+    deprecated_cursor_field = ads_reports.deprecated_cursor_field
+    assert deprecated_cursor_field == cursor_field_expected
 
 
 def test_request_params():
@@ -208,6 +224,7 @@ def test_request_params():
         "dimensions": '["advertiser_id", "stat_time_day", "gender", "age"]',
         "end_date": "2021",
         "metrics": '["spend", "cpc", "cpm", "impressions", "clicks", "ctr"]',
+        "filters": '[{"filter_value": ["STATUS_ALL"], "field_name": "ad_status", "filter_type": "IN"}, {"filter_value": ["STATUS_ALL"], "field_name": "campaign_status", "filter_type": "IN"}, {"filter_value": ["STATUS_ALL"], "field_name": "adgroup_status", "filter_type": "IN"}]',
         "page_size": 1000,
         "report_type": "AUDIENCE",
         "service_type": "AUCTION",
@@ -232,5 +249,27 @@ def test_get_updated_state():
         # state should be updated only when all records have been read (is_finished = True)
         is_finished.return_value = True
         state2 = ads.get_updated_state(current_stream_state=state, latest_record={})
-        state2_modify_time = state2["modify_time"]  # state2_modify_time is JsonUpdatedState object
+        # state2_modify_time is JsonUpdatedState object
+        state2_modify_time = state2["modify_time"]
         assert state2_modify_time.dict() == "2020-01-08 00:00:00"
+
+
+@pytest.mark.parametrize(
+    "value, expected",
+    [
+        (["str1", "str2", "str3"], '["str1", "str2", "str3"]'),
+        ([1, 2, 3], "[1, 2, 3]"),
+    ],
+)
+def test_convert_array_param(value, expected):
+    stream = Advertisers("2021-01-01", "2021-01-02")
+    test = stream.convert_array_param(value)
+    assert test == expected
+
+
+def test_no_next_page_token(requests_mock):
+    stream = Advertisers("2021-01-01", "2021-01-02")
+    url = stream.url_base + stream.path()
+    requests_mock.get(url, json={"data": {"page_info": {}}})
+    test_response = requests.get(url)
+    assert stream.next_page_token(test_response) is None

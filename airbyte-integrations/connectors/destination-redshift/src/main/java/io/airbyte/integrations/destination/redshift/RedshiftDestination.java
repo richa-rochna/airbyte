@@ -9,22 +9,24 @@ import static io.airbyte.integrations.destination.redshift.util.RedshiftUtil.fin
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.airbyte.cdk.integrations.base.Destination;
+import io.airbyte.cdk.integrations.base.IntegrationRunner;
+import io.airbyte.cdk.integrations.destination.jdbc.copy.SwitchingDestination;
 import io.airbyte.commons.json.Jsons;
 import io.airbyte.commons.resources.MoreResources;
-import io.airbyte.integrations.base.Destination;
-import io.airbyte.integrations.base.IntegrationRunner;
-import io.airbyte.integrations.destination.jdbc.copy.SwitchingDestination;
 import io.airbyte.protocol.models.v0.ConnectorSpecification;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The Redshift Destination offers two replication strategies. The first inserts via a typical SQL Insert statement. Although less efficient, this
- * requires less user set up. See {@link RedshiftInsertDestination} for more detail. The second inserts via streaming the data to an S3 bucket, and
- * Cop-ing the date into Redshift. This is more efficient, and recommended for production workloads, but does require users to set up an S3 bucket and
- * pass in additional credentials. See {@link RedshiftStagingS3Destination} for more detail. This class inspect the given arguments to determine which
- * strategy to use.
+ * The Redshift Destination offers two replication strategies. The first inserts via a typical SQL
+ * Insert statement. Although less efficient, this requires less user set up. See
+ * {@link RedshiftInsertDestination} for more detail. The second inserts via streaming the data to
+ * an S3 bucket, and Cop-ing the date into Redshift. This is more efficient, and recommended for
+ * production workloads, but does require users to set up an S3 bucket and pass in additional
+ * credentials. See {@link RedshiftStagingS3Destination} for more detail. This class inspect the
+ * given arguments to determine which strategy to use.
  */
 public class RedshiftDestination extends SwitchingDestination<RedshiftDestination.DestinationType> {
 

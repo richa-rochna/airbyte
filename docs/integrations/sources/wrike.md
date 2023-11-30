@@ -29,10 +29,10 @@ The Wrike source connector supports on full sync refresh.
 The Wrike source connector supports the following streams:
 
 * [Tasks](https://developers.wrike.com/api/v4/tasks/)\(Full Refresh\)
-* [Customfields](https://developers.wrike.com/api/v4/customfields/)\(Full Refresh\)
+* [Customfields](https://developers.wrike.com/api/v4/custom-fields/)\(Full Refresh\)
 * [Comments](https://developers.wrike.com/api/v4/comments/)\(Full Refresh\)
 * [Contacts](https://developers.wrike.com/api/v4/contacts/)\(Full Refresh\)
-* [Folders](https://developers.wrike.com/api/v4/folders/)\(Full Refresh\)
+* [Folders](https://developers.wrike.com/api/v4/folders-projects/)\(Full Refresh\)
 
 ### Data type mapping
 
@@ -46,5 +46,6 @@ The Wrike connector should not run into Wrike API limitations under normal usage
 
 | Version | Date       | Pull Request                                             | Subject                                                                                                                                                |
 |:--------|:-----------|:---------------------------------------------------------|:-------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 0.2.0   | 2023-10-10 | [31058](https://github.com/airbytehq/airbyte/pull/31058) | Migrate to low code.
 | 0.1.0   | 2022-08-16 | [15638](https://github.com/airbytehq/airbyte/pull/15638) | Initial version/release of the connector.
 

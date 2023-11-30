@@ -4,7 +4,7 @@ worker container, such as a Destination container. This guide will assume use of
 however the steps could be applied to another IDE or debugger.
 
 ## Prerequisites
-You should have the airbyte repo downloaded and should be able to [run the platform locally](/deploying-airbyte/local-deployment).
+You should have the airbyte repo downloaded and should be able to [run the platform locally](https://docs.airbyte.com/deploying-airbyte/local-deployment).
 Also, if you're on macOS you will need to follow the installation steps for [Docker Mac Connect](https://github.com/chipmk/docker-mac-net-connect).
 
 ## Connecting your debugger
@@ -84,7 +84,7 @@ In the `docker-compose.debug.yaml` file you should see an entry for the `worker`
 Similar to the previous debugging example, we want to pass an environment variable to the `docker compose` command. This time we're setting the 
 `DEBUG_CONTAINER_IMAGE` environment variable to the name of the container we're targeting. For our example that is `destination-postgres` so run the command:
 ```bash
-DEBUG_CONTAINER_IMAGE="destination-postgres" VERSION="dev" docker compose -f docker-compose.yaml -f docker-compose.debug.yaml up
+DEBUG_CONTAINER_IMAGE="destination-postgres:5005" VERSION="dev" docker compose -f docker-compose.yaml -f docker-compose.debug.yaml up
 ```
 The `worker` container now has an environment variable `DEBUG_CONTAINER_IMAGE` with a value of `destination-postgres` which when it compares when it is
 spawning containers. If the container name matches the environment variable, it will set the `JAVA_TOOL_OPTIONS` environment variable in the container to
